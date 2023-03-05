@@ -951,7 +951,7 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen 
 		return rserr_invalid_mode;
 	}
 
-	R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
+	//R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
 
 	return retval;
 }
@@ -972,7 +972,8 @@ void SWimp_SetPalette( const unsigned char *palette )
 		return;
 
     if ( !palette )
-        palette = ( const unsigned char * ) sw_state.currentpalette;
+    	return;
+        // palette = ( const unsigned char * ) sw_state.currentpalette;
  
 	for(i=0;i<256;i++)
 		st2d_8to16table[i]= xlib_rgb(palette[i*4],

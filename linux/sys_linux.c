@@ -205,7 +205,7 @@ void *Sys_GetGameAPI (void *parms)
 #elif defined __alpha__
 	const char *gamename = "gameaxp.so";
 #else
-#error Unknown arch
+	const char *gamename = "gamex86_64.so";
 #endif
 
 	setreuid(getuid(), getuid());
@@ -216,23 +216,27 @@ void *Sys_GetGameAPI (void *parms)
 
 	getcwd(curpath, sizeof(curpath));
 
-	Com_Printf("------- Loading %s -------", gamename);
+	Com_Printf("------- Loading %s -------\n", gamename);
 
 	// now run through the search paths
 	path = NULL;
 	while (1)
 	{
 		path = FS_NextPath (path);
-		if (!path)
-			return NULL;		// couldn't find one anywhere
+		if (!path) return NULL;		// couldn't find one anywhere
+
 		sprintf (name, "%s/%s/%s", curpath, path, gamename);
+		Com_Printf("Trying %s\n",name);
 		game_library = dlopen (name, RTLD_NOW );
 		if (game_library)
 		{
 			Com_DPrintf ("LoadLibrary (%s)\n",name);
 			break;
+		} else {
+			Com_Printf( "Game LoadLibrary(\"%s\") failed: %s\n", name , dlerror());
 		}
 	}
+
 
 	GetGameAPI = (void *)dlsym (game_library, "GetGameAPI");
 	if (!GetGameAPI)
@@ -268,7 +272,7 @@ char *Sys_GetClipboardData(void)
 	return NULL;
 }
 
-int main (int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	int 	time, oldtime, newtime;
 

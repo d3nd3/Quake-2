@@ -311,9 +311,7 @@ $(BUILDDIR)/client/net_udp.o :    $(LINUX_DIR)/net_udp.c
 
 GAME_OBJS = \
 	$(BUILDDIR)/game/g_ai.o \
-	$(BUILDDIR)/game/p_client.o \
 	$(BUILDDIR)/game/g_cmds.o \
-	$(BUILDDIR)/game/g_svcmds.o \
 	$(BUILDDIR)/game/g_combat.o \
 	$(BUILDDIR)/game/g_func.o \
 	$(BUILDDIR)/game/g_items.o \
@@ -323,6 +321,7 @@ GAME_OBJS = \
 	$(BUILDDIR)/game/g_phys.o \
 	$(BUILDDIR)/game/g_save.o \
 	$(BUILDDIR)/game/g_spawn.o \
+	$(BUILDDIR)/game/g_svcmds.o \
 	$(BUILDDIR)/game/g_target.o \
 	$(BUILDDIR)/game/g_trigger.o \
 	$(BUILDDIR)/game/g_turret.o \
@@ -336,6 +335,7 @@ GAME_OBJS = \
 	$(BUILDDIR)/game/m_boss32.o \
 	$(BUILDDIR)/game/m_brain.o \
 	$(BUILDDIR)/game/m_chick.o \
+	$(BUILDDIR)/game/m_flash.o \
 	$(BUILDDIR)/game/m_flipper.o \
 	$(BUILDDIR)/game/m_float.o \
 	$(BUILDDIR)/game/m_flyer.o \
@@ -351,12 +351,13 @@ GAME_OBJS = \
 	$(BUILDDIR)/game/m_soldier.o \
 	$(BUILDDIR)/game/m_supertank.o \
 	$(BUILDDIR)/game/m_tank.o \
+	$(BUILDDIR)/game/p_client.o \
 	$(BUILDDIR)/game/p_hud.o \
 	$(BUILDDIR)/game/p_trail.o \
 	$(BUILDDIR)/game/p_view.o \
 	$(BUILDDIR)/game/p_weapon.o \
-	$(BUILDDIR)/game/q_shared.o \
-	$(BUILDDIR)/game/m_flash.o
+	$(BUILDDIR)/game/q_shared.o
+
 
 $(BUILDDIR)/game$(ARCH).$(SHLIBEXT) : $(GAME_OBJS)
 	$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GAME_OBJS)
@@ -533,6 +534,7 @@ CTF_OBJS = \
 	$(BUILDDIR)/ctf/p_view.o \
 	$(BUILDDIR)/ctf/p_weapon.o \
 	$(BUILDDIR)/ctf/q_shared.o
+
 
 $(BUILDDIR)/ctf/game$(ARCH).$(SHLIBEXT) : $(CTF_OBJS)
 	$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(CTF_OBJS)

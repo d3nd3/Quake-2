@@ -12,7 +12,7 @@
 #include "../qcommon/qcommon.h"
 
 //===============================================================================
-
+/*
 byte *membase;
 int maxhunksize;
 int curhunksize;
@@ -66,7 +66,7 @@ void Hunk_Free (void *base)
 		if (munmap(m, *((int *)m)))
 			Sys_Error("Hunk_Free: munmap failed (%d)", errno);
 	}
-}
+}*/
 
 //===============================================================================
 
