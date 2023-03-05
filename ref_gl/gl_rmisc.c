@@ -167,7 +167,7 @@ void GL_Strings_f( void )
 	ri.Con_Printf (PRINT_ALL, "GL_VENDOR: %s\n", gl_config.vendor_string );
 	ri.Con_Printf (PRINT_ALL, "GL_RENDERER: %s\n", gl_config.renderer_string );
 	ri.Con_Printf (PRINT_ALL, "GL_VERSION: %s\n", gl_config.version_string );
-	ri.Con_Printf (PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string );
+	ri.Con_Printf (PRINT_ALL, "GL_EXTENSIONS: hidden\n", gl_config.extensions_string );
 }
 
 /*
@@ -177,7 +177,7 @@ void GL_SetDefaultState( void )
 {
 	qglClearColor (1,0, 0.5 , 0.5);
 	qglCullFace(GL_FRONT);
-	qglEnable(GL_TEXTURE_2D);
+	// qglEnable(GL_TEXTURE_2D);
 
 	qglEnable(GL_ALPHA_TEST);
 	qglAlphaFunc(GL_GREATER, 0.666);

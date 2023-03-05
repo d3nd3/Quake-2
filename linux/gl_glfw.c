@@ -96,6 +96,10 @@ static void InitSig(void)
     signal(SIGSEGV, signal_handler);
     signal(SIGTERM, signal_handler);
 }
+void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+    Com_Printf("GLFW3:OpenGL Error: %s\n",message);
+}
 
 glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 {
@@ -103,12 +107,18 @@ glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 }
 
 /*
+R_Init
+    GL_SetDefaultState
+*/
+
+
+/*
 ** GLimp_SetMode
 */
 int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 {
     int width, height;
-    
+    Com_Printf("GL_imp_SetMode: +\n");
     fullscreen = false;
     ri.Con_Printf( PRINT_ALL, "Initializing OpenGL display\n");
 
@@ -132,9 +142,6 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwSwapInterval(0);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
 
     if (fullscreen) {
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -151,12 +158,21 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 
     glfwMakeContextCurrent(window);
 
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(debug_callback, NULL);
+    
+    glfwSwapInterval(0);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+
+
     // glfwSetFramebufferSizeCallback(window, glfw_onFramebufferSize);
 
     // glClearColor(0.0, 0.0f, 0.0f, 1.0f);
     // set viewport
     glViewport(0, 0, width, height);
 
+    /*
     GLuint vao = 0;
      glCreateVertexArrays( 1, &vao );
      glBindVertexArray( vao );
@@ -172,7 +188,7 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
      glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
      glEnableVertexAttribArray(0);
-
+    */
 
     
     // let the sound and input subsystems know about the new window
@@ -197,6 +213,7 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 */
 void GLimp_Shutdown( void )
 {
+    Com_Printf("GLimp_Shutdown: +\n");
     glfwDestroyWindow(window);
     window = NULL;
 }
@@ -219,6 +236,8 @@ int GLimp_Init( void *hinstance, void *wndproc )
 */
 void GLimp_BeginFrame( float camera_seperation )
 {
+    // Com_Printf("GLimp_BeginFrame: +\n");
+    // also called by SCR_UpdateScreen
 }
 
 /*
@@ -232,6 +251,9 @@ void GLimp_EndFrame(void)
 {
     glFlush();
     glfwSwapBuffers(window);
+
+    // called by SCR_UpdateScreen
+    // Com_Printf("GL_imp_EndFrame: Swapping buffers\n");
 }
 
 /*
@@ -239,6 +261,7 @@ void GLimp_EndFrame(void)
 */
 void GLimp_AppActivate( qboolean active )
 {
+    Com_Printf("GLimp_AppActivate: +\n");
 }
 
 // extern void gl3DfxSetPaletteEXT(GLuint *pal);

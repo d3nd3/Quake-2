@@ -28,7 +28,7 @@ EXE = ../quake2.exe
 REFGL = ../ref_gl.so
 GAME = ../baseq2/gamex86_64.so
 
-.DEFAULT_GOAL = all
+.DEFAULT_GOAL = install
 
 # -------------------SERVER+CLIENT----------------
 
@@ -534,21 +534,28 @@ $(ODIR)/r_surf.o : ../ref_soft/r_surf.c
 	
 #----------------------------------------------------------------------
 
-.PHONY: clean
+.PHONY: clean run
 clean:
 	rm -f next/*
+run:
+	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so +set gl_log 1
 
 #----------------------------------------------------------------------
 
-all: $(EXE) $(GAME) $(REFGL)
+install: all
+	sudo chown root:root ../ref_gl.so
 
+all: $(EXE) $(GAME) $(REFGL)
+	touch all
+
+# relinking uses $^ because must include all obj files.
 $(EXE) : $(SERVERFILES) $(COMMONFILES) $(CLIENTFILES) $(SHAREDFILES) $(EXE_LINUX_OBJS) $(ODIR)/snd_mixa.o
-	cc -o $@ $? $(LDFLAGS)
+	cc -o $@ $^ $(LDFLAGS)
 
 #always put SHAREDFILES with a library you compile!
 
 $(REFGL) : $(REFGL_ALL_OBJS) $(SHAREDFILES)
-	cc -shared -o $@ $? $(LDFLAGS)
+	cc -shared -o $@ $^ $(LDFLAGS)
 
 $(GAME) : $(SHAREDFILES) $(GAME_OBJS) 
-	cc -shared -o $@ $? $(LDFLAGS)
+	cc -shared -o $@ $^ $(LDFLAGS)
