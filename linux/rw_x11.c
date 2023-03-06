@@ -567,6 +567,8 @@ int XLateKey(XKeyEvent *ev)
 
 void GetEvent(void)
 {
+
+	Com_Printf("GLWF: X11 GetEvent\n");
 	XEvent x_event;
 	int b;
    
@@ -1074,11 +1076,15 @@ void KBD_Init(Key_Event_fp_t fp)
 
 void KBD_Update(void)
 {
+	
 // get events from x server
 	if (x_disp)
 	{
-		while (XPending(x_disp)) 
+		while (XPending(x_disp)) {
+			Com_Printf("KBD_Update: XPending?\n");
 			GetEvent();
+		}
+		Com_Printf("Xpending always false?\n");
 		while (keyq_head != keyq_tail)
 		{
 			Key_Event_fp(keyq[keyq_tail].key, keyq[keyq_tail].down);

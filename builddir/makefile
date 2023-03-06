@@ -263,10 +263,10 @@ REFGL_LINUX_FILES = \
 ../linux/qgl_linux.o \
 ../linux/q_shlinux.o \
 ../linux/q_shlinux2.o \
-../linux/glob.o \
-../linux/rw_x11.o
+../linux/glob.o
 
-# These are user input , one is required
+# These are user input , one is required, perhaps not. Just wants keyboard input routines.
+# irix/glw_imp.c has good example
 #../linux/rw_x11.o \
 #../linux/rw_svgalib.c
 # possibly q_shlinux
@@ -288,8 +288,7 @@ REFGL_ALL_FILES := $(REFGL_LINUX_FILES) $(REFGL_FILES)
 define multi_line_var
 
 $(ODIR)/$(notdir $(1)): $(1:%.o=%.c)
-	cc $(CFLAGS) -E $$? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $$@ /tmp/temp.i
+	cc $(CFLAGS) -o $$@ $$?
 endef
 
 # Create targets automatically using foreach
@@ -341,205 +340,158 @@ $(ODIR)/sv_world.o : ../server/sv_world.c
 #----------------------------------------------------------------------
 
 $(ODIR)/cl_newfx.o : ../client/cl_newfx.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 $(ODIR)/cl_demo.o : ../client/cl_demo.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_ents.o : ../client/cl_ents.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_fx.o : ../client/cl_fx.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_input.o : ../client/cl_input.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_inv.o : ../client/cl_inv.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_main.o : ../client/cl_main.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_parse.o : ../client/cl_parse.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_pred.o : ../client/cl_pred.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i	
+	cc $(CFLAGS) -o $@ $?	
 
 $(ODIR)/cl_tent.o : ../client/cl_tent.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/console.o : ../client/console.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/keys.o : ../client/keys.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/menu.o : ../client/menu.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/qmenu.o : ../client/qmenu.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/sbar2.o : ../client/sbar2.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_scrn.o : ../client/cl_scrn.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_cin.o : ../client/cl_cin.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/snd_dma.o : ../client/snd_dma.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/snd_mem.o : ../client/snd_mem.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/snd_mix.o : ../client/snd_mix.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cl_view.o : ../client/cl_view.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
-	
+	cc $(CFLAGS) -o $@ $?
 #----------------------------------------------------------------------
 
 $(ODIR)/cmd.o : ../qcommon/cmd.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cmodel.o : ../qcommon/cmodel.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/cvar.o : ../qcommon/cvar.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/files.o : ../qcommon/files.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/md4.o : ../qcommon/md4.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/net_chan.o : ../qcommon/net_chan.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 
 $(ODIR)/common.o : ../qcommon/common.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/crc.o : ../qcommon/crc.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/pmove.o : ../qcommon/pmove.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 #----------------------------------------------------------------------
 
 $(ODIR)/r_aclip.o : ../ref_soft/r_aclip.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_alias.o : ../ref_soft/r_alias.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_bsp.o : ../ref_soft/r_bsp.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_draw.o : ../ref_soft/r_draw.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_edge.o : ../ref_soft/r_edge.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_image.o : ../ref_soft/r_image.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_light.o : ../ref_soft/r_light.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_main.o : ../ref_soft/r_main.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_misc.o : ../ref_soft/r_misc.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_model.o : ../ref_soft/r_model.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_part.o : ../ref_soft/r_part.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_polyse.o : ../ref_soft/r_polyse.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_poly.o : ../ref_soft/r_poly.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_rast.o : ../ref_soft/r_rast.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_scan.o : ../ref_soft/r_scan.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_sprite.o : ../ref_soft/r_sprite.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
+	cc $(CFLAGS) -o $@ $?
 
 $(ODIR)/r_surf.o : ../ref_soft/r_surf.c
-	cc $(CFLAGS) -E $? | tr -d '\015' > /tmp/temp.i
-	cc $(CFLAGS) -o $@ /tmp/temp.i
-	
+	cc $(CFLAGS) -o $@ $?
 #----------------------------------------------------------------------
 
-.PHONY: clean run
+.PHONY: clean run debug
 clean:
 	rm -f next/*
 run:
-	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so +set gl_log 1
+	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so
 
+debug:
+	cd .. && gdb -ex 'set follow-fork-mode child' --args ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so
 #----------------------------------------------------------------------
 
 install: all
