@@ -254,6 +254,12 @@ void Sys_AppActivate (void)
 {
 }
 
+/*
+Called by cl_main.c
+	@CL_SendCommand
+
+	sits at top of function, to make sure input has latest key events?
+*/
 void Sys_SendKeyEvents (void)
 {
 #ifndef DEDICATED_ONLY

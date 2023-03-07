@@ -21,8 +21,7 @@ LDFLAGS = \
 -lglfw  \
 -lm \
 -ldl \
--lXext -lX11 \
--lasound
+-lXext -lX11
 ODIR = next
 
 EXEBASE = quake2
@@ -491,12 +490,12 @@ $(ODIR)/r_surf.o : ../ref_soft/r_surf.c
 clean:
 	rm -f next/*
 run:
-	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set vid_ref "gl"
+	cd .. && ./quake2.exe +set console 1 +set vid_ref "gl"
 rundev:
-	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set vid_ref "gl" +set developer 7
+	cd .. && ./quake2.exe +set console 1 +set vid_ref "gl" +set developer 7
 
 debug:
-	cd .. && gdb -ex 'set follow-fork-mode child' --args ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so
+	cd .. && gdb -ex 'set follow-fork-mode child' --args ./quake2.exe +set vid_fullscreen 0 +set console 1 +set vid_ref "gl"
 #----------------------------------------------------------------------
 
 install: all

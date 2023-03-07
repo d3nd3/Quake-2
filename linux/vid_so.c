@@ -9,10 +9,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+#include <GLFW/glfw3.h>
+
 
 #include "../client/client.h"
 
 #include "../linux/rw_linux.h"
+
+extern void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+const GLFWvidmode* originalResolution;
 
 // Structure containing functions exported from refresh DLL
 refexport_t	re;
@@ -52,6 +58,13 @@ void (*RW_IN_Move_fp)(usercmd_t *cmd);
 void (*RW_IN_Frame_fp)(void);
 
 void Real_IN_Init (void);
+
+extern void IN_OnKeyPress(int key, int scancode, int action, int mods);
+void window_focus_callback(GLFWwindow* window, int focused);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+
+
 
 /*
 ==========================================================================
@@ -107,38 +120,56 @@ void VID_Restart_f (void)
 	vid_ref->modified = true;
 }
 
+void VID_Modes_f(void) {
+	GLFWmonitor* prim = glfwGetPrimaryMonitor();
+	if (!prim) {
+	    fprintf(stderr, "Failed to get primary monitor\n");
+	    glfwTerminate();
+	    exit(EXIT_FAILURE);
+	}
+	int count = 0;
+	const GLFWvidmode* modes = glfwGetVideoModes(prim, &count);
+	if (!modes) {
+	   fprintf(stderr, "Failed to get video modes\n");
+	   glfwTerminate();
+	   exit(EXIT_FAILURE);
+	}
+	for (int i = 0; i < count; i++) {
+	   Com_Printf("%d - %dx%d\n", i,modes[i].width, modes[i].height);
+	}
+}
+
 /*
 ** VID_GetModeInfo
 */
-typedef struct vidmode_s
-{
-	const char *description;
-	int         width, height;
-	int         mode;
-} vidmode_t;
-
-vidmode_t vid_modes[] =
-{
-	{ "Mode 0: 320x240",   320, 240,   0 },
-	{ "Mode 1: 400x300",   400, 300,   1 },
-	{ "Mode 2: 512x384",   512, 384,   2 },
-	{ "Mode 3: 640x480",   640, 480,   3 },
-	{ "Mode 4: 800x600",   800, 600,   4 },
-	{ "Mode 5: 960x720",   960, 720,   5 },
-	{ "Mode 6: 1024x768",  1024, 768,  6 },
-	{ "Mode 7: 1152x864",  1152, 864,  7 },
-	{ "Mode 8: 1280x1024",  1280, 1024, 8 },
-	{ "Mode 9: 1600x1200", 1600, 1200, 9 }
-};
 
 qboolean VID_GetModeInfo( int *width, int *height, int mode )
 {
-	if ( mode < 0 || mode >= VID_NUM_MODES )
+	// VID_Modes_f();
+
+	int count;
+    const GLFWvidmode* modes = glfwGetVideoModes(glfwGetPrimaryMonitor(), &count);
+    if (!modes) {
+       fprintf(stderr, "Failed to get video modes\n");
+       glfwTerminate();
+       exit(EXIT_FAILURE);
+    }
+
+    if ( mode < 0 || mode >= count )
 		return false;
 
-	*width  = vid_modes[mode].width;
-	*height = vid_modes[mode].height;
+	if ( mode == 0 ) {
+		
+		*width=originalResolution->width;
+		*height=originalResolution->height;
+	    return true;
+	}
 
+    /*
+        Else return the width and height of all the mode specified.
+    */
+    *width=modes[mode].width;
+    *height=modes[mode].height;
 	return true;
 }
 
@@ -275,6 +306,7 @@ qboolean VID_LoadRefresh( char *name )
 		Com_Error (ERR_FATAL, "%s has incompatible api_version", name);
 	}
 
+#if 0
 	/* Init IN (Mouse) */
 	in_state.IN_CenterView_fp = IN_CenterView;
 	in_state.Key_Event_fp = Do_Key_Event;
@@ -290,7 +322,7 @@ qboolean VID_LoadRefresh( char *name )
 		Sys_Error("No RW_IN functions in REF.\n");
 
 	Real_IN_Init();
-
+#endif
 	if ( re.Init( 0, 0 ) == -1 )
 	{
 		re.Shutdown();
@@ -299,23 +331,16 @@ qboolean VID_LoadRefresh( char *name )
 	}
 
 	/* Init KBD */
-#if 1
+#if 0
 	if ((KBD_Init_fp = dlsym(reflib_library, "KBD_Init")) == NULL ||
 		(KBD_Update_fp = dlsym(reflib_library, "KBD_Update")) == NULL ||
 		(KBD_Close_fp = dlsym(reflib_library, "KBD_Close")) == NULL)
 		Sys_Error("No KBD functions in REF.\n");
 #else
 	{
-		void KBD_Init(void);
-		void KBD_Update(void);
-		void KBD_Close(void);
-
-		KBD_Init_fp = KBD_Init;
-		KBD_Update_fp = KBD_Update;
-		KBD_Close_fp = KBD_Close;
+		KBD_Update_fp = glfwPollEvents;
 	}
 #endif
-	KBD_Init_fp(Do_Key_Event);
 
 	// give up root now
 	setreuid(getuid(), getuid());
@@ -406,10 +431,27 @@ void VID_Init (void)
 
 	/* Add some console commands that we want to handle */
 	Cmd_AddCommand ("vid_restart", VID_Restart_f);
-
+	Cmd_AddCommand("vid_modes", VID_Modes_f);
 	/* Disable the 3Dfx splash screen */
 	putenv("FX_GLIDE_NO_SPLASH=0");
-		
+
+
+	glfwInit();
+	originalResolution = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+	// can always get window with glfwGetCurrentContext, if context is set.
+
+	// 4) fullscreen monitor
+	GLFWwindow* window = glfwCreateWindow(640, 480, "Quake 2 -glfwLinux", NULL, NULL);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+
+	 /* Set the key callback, calls keys.c KeyEvent */
+    glfwSetKeyCallback(window, key_callback);
+    /* window focus/loseFocus callback, calls AppActivate and GLimp_AppActivate*/
+    // glfwSetWindowFocusCallback(window, window_focus_callback);
+
+	glfwMakeContextCurrent(window);
 	/* Start the graphics mode and load refresh DLL */
 	VID_CheckChanges();
 }
@@ -426,8 +468,19 @@ void VID_Shutdown (void)
 		re.Shutdown ();
 		VID_FreeReflib ();
 	}
+
+    //glfwDestroyWindow(window);
+    glfwTerminate();
 }
 
+void window_focus_callback(GLFWwindow* window, int focused) {
+
+    IN_Activate(focused);
+
+    if ( reflib_active ) re.AppActivate(focused);
+}
+
+//minimise callback?
 
 /*****************************************************************************/
 /* INPUT                                                                     */
@@ -437,6 +490,19 @@ void Real_IN_Init (void)
 {
 	if (RW_IN_Init_fp)
 		RW_IN_Init_fp(&in_state);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	// Com_Printf("key_callback\n");
+	qboolean key_state;
+	if ( action == GLFW_RELEASE ) 
+        key_state = 0;
+    else
+    	key_state = 1;
+    // else if ( action == GLFW_PRESS || action == GLFW_REPEAT )
+        
+	IN_OnKeyPress(key,scancode,key_state,mods);
 }
 
 

@@ -121,7 +121,7 @@ qboolean SNDDMA_Init(void)
     // http://manuals.opensound.com/developer/SNDCTL_DSP_SETFRAGMENT.html
 
     // lower this the better
-    int frag_size = 8;
+    int frag_size = 16;
     int max_fragments = info.bytes/frag_size;
 
     frag_size = (int)round(log2f(info.bytes/max_fragments));

@@ -785,7 +785,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 
 	// any key during the attract mode will bring up the menu
 	if (cl.attractloop && cls.key_dest != key_menu) {
-		Com_Printf("Opening menu!\n");
+		// Com_Printf("Opening menu!\n");
 		key = K_ESCAPE;
 	}
 
@@ -856,7 +856,14 @@ void Key_Event (int key, qboolean down, unsigned time)
 				Cbuf_AddText (cmd);
 			}
 		}
-		return;
+		// key releases removed here.
+		// fix linux tab key doesnt' have a down event for some strange reason.
+		#if 1
+		if( key != K_TAB )
+			return;
+		#else
+			return;
+		#endif
 	}
 
 //
@@ -866,6 +873,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 	|| (cls.key_dest == key_console && !consolekeys[key])
 	|| (cls.key_dest == key_game && ( cls.state == ca_active || !consolekeys[key] ) ) )
 	{
+		// Com_Printf("Not a console key\n");
 		kb = keybindings[key];
 		if (kb)
 		{
@@ -882,9 +890,6 @@ void Key_Event (int key, qboolean down, unsigned time)
 		}
 		return;
 	}
-
-	if (!down)
-		return;		// other systems only care about key down events
 
 	if (shift_down)
 		key = keyshift[key];

@@ -531,6 +531,7 @@ void VID_UpdateWindowPosAndSize( int x, int y )
 
 /*
 ** VID_NewWindow
+new window size?
 */
 void VID_NewWindow ( int width, int height)
 {
