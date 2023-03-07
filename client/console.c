@@ -74,11 +74,11 @@ void Con_ToggleConsole_f (void)
 		return;
 	}
 
-	if (cls.state == ca_disconnected)
-	{	// start the demo loop again
-		Cbuf_AddText ("d1\n");
-		return;
-	}
+	// if (cls.state == ca_disconnected)
+	// {	// start the demo loop again
+	// 	Cbuf_AddText ("d1\n");
+	// 	return;
+	// }
 
 	Key_ClearTyping ();
 	Con_ClearNotify ();

@@ -48,7 +48,7 @@ GLXContext              gl_cx;
 static qboolean         doShm;
 static Display          *x_disp;
 static Colormap         x_cmap;
-static Window           x_win;
+Window           x_win;
 static GC               x_gc;
 static Visual           *x_vis;
 static XVisualInfo      *x_visinfo;
@@ -217,11 +217,6 @@ void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsi
     Com_Printf("GLFW3:OpenGL Error: %s\n",message);
 }
 
-glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
 Window getLastCreatedWindow(Display *display, Window rootWindow) {
     Window parent, *children;
     unsigned int nChildren;
@@ -237,6 +232,43 @@ Window getLastCreatedWindow(Display *display, Window rootWindow) {
 }
 
 
+void getVideoModes(int setMode, int *width, int *height) {
+    GLFWmonitor* primary = glfwGetPrimaryMonitor();
+    if (!primary) {
+        fprintf(stderr, "Failed to get primary monitor\n");
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+
+    const GLFWvidmode* mode = glfwGetVideoMode(primary);
+    if (!mode) {
+        fprintf(stderr, "Failed to get video mode\n");
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+
+    Com_Printf("Primary monitor resolution: %dx%d\n", mode->width, mode->height);
+    if ( setMode == 0 ) {
+        *width=mode->width;
+        *height=mode->height;
+        return;
+    }
+    int count;
+    const GLFWvidmode* modes = glfwGetVideoModes(primary, &count);
+    if (!modes) {
+       fprintf(stderr, "Failed to get video modes\n");
+       glfwTerminate();
+       exit(EXIT_FAILURE);
+    }
+
+    printf("Supported resolutions:\n");
+    for (int i = 0; i < count; i++) {
+       Com_Printf("- %dx%d\n", modes[i].width, modes[i].height);
+    }
+    *width=modes[setMode].width;
+    *height=modes[setMode].height;
+}
+
 /*
 Called by R_Init
     GL_SetDefaultState in gl_rmisc, initializes GL stuff.
@@ -247,25 +279,17 @@ Called by R_Init
 int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 {
     int width, height;
-    Com_Printf("GL_imp_SetMode: +\n");
-    fullscreen = false;
+
     ri.Con_Printf( PRINT_ALL, "Initializing OpenGL display\n");
-
-    ri.Con_Printf (PRINT_ALL, "...setting mode %d:", mode );
-
-    if ( !ri.Vid_GetModeInfo( &width, &height, mode ) )
-    {
-        ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
-        return rserr_invalid_mode;
-    }
-
-    ri.Con_Printf( PRINT_ALL, " %d %d\n", width, height );
 
     // destroy the existing window
     GLimp_Shutdown ();
 
     // create a window and OpenGL context using GLFW library
     glfwInit();
+
+    getVideoModes(mode, &width,&height);
+
     // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -273,8 +297,6 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
     // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     if (fullscreen) {
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        // const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
         window = glfwCreateWindow(width, height, "My Game", NULL, NULL);
     } else {
         window = glfwCreateWindow(640, 480, "My Game", NULL, NULL);
@@ -284,23 +306,20 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
         glfwTerminate();
         return rserr_invalid_mode;
     }
-    // get the window handle
+    
+    // keyboard stuff
     x_disp = XOpenDisplay(NULL);
     Window root;
     root = XRootWindow(x_disp, DefaultScreen(x_disp));
     x_win = getLastCreatedWindow(x_disp,root);
-    
-
-
     XDisplayKeycodes(x_disp,&min_keycodes,&max_keycodes);
 
-     /* Set the key callback */
+     /* Set the key callback, calls keys.c KeyEvent */
     glfwSetKeyCallback(window, key_callback);
-
-
 
     glfwMakeContextCurrent(window);
     Com_Printf("GLFW: GL_VERSION IS : %s\n",glGetString(GL_VERSION));
+    glViewport(0, 0, width, height);
 
     // VERY USEFUL DEBUGGING MESSAGES.
     /*glEnable(GL_DEBUG_OUTPUT);
@@ -312,11 +331,8 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
     // glEnable(GL_DEPTH_TEST);
 
 
-    // glfwSetFramebufferSizeCallback(window, glfw_onFramebufferSize);
-
     // glClearColor(0.0, 0.0f, 0.0f, 1.0f);
-    // set viewport
-    glViewport(0, 0, width, height);
+
 
     /*
     GLuint vao = 0;
@@ -365,7 +381,7 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 */
 void GLimp_Shutdown( void )
 {
-    Com_Printf("GLimp_Shutdown: +\n");
+    // Com_Printf("GLimp_Shutdown: +\n");
 
     if ( x_disp ) {
         XCloseDisplay(x_disp);
@@ -483,7 +499,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-
+/*
+client/keys.c KeyEvent
+*/
 unsigned char XLateKey(int keycode, qboolean state)
 {
     // KeyCode keycode = XKeysymToKeycode(display, XK_space);
@@ -599,27 +617,28 @@ unsigned char XLateKey(int keycode, qboolean state)
         case XK_KP_Subtract: retKey = K_KP_MINUS; break;
         case XK_KP_Divide: retKey = K_KP_SLASH; break;
 
-#if 0
-        case 0x021: key = '1';break;/* [!] */
-        case 0x040: key = '2';break;/* [@] */
-        case 0x023: key = '3';break;/* [#] */
-        case 0x024: key = '4';break;/* [$] */
-        case 0x025: key = '5';break;/* [%] */
-        case 0x05e: key = '6';break;/* [^] */
-        case 0x026: key = '7';break;/* [&] */
-        case 0x02a: key = '8';break;/* [*] */
-        case 0x028: key = '9';;break;/* [(] */
-        case 0x029: key = '0';break;/* [)] */
-        case 0x05f: key = '-';break;/* [_] */
-        case 0x02b: key = '=';break;/* [+] */
-        case 0x07c: key = '\'';break;/* [|] */
-        case 0x07d: key = '[';break;/* [}] */
-        case 0x07b: key = ']';break;/* [{] */
-        case 0x022: key = '\'';break;/* ["] */
-        case 0x03a: key = ';';break;/* [:] */
-        case 0x03f: key = '/';break;/* [?] */
-        case 0x03e: key = '.';break;/* [>] */
-        case 0x03c: key = ',';break;/* [<] */
+#if 1
+        case 0x021: retKey = '1';break;/* [!] */
+        case 0x040: retKey = '2';break;/* [@] */
+        case 0x023: retKey = '3';break;/* [#] */
+        case 0x024: retKey = '4';break;/* [$] */
+        case 0x025: retKey = '5';break;/* [%] */
+        case 0x05e: retKey = '6';break;/* [^] */
+        case 0x026: retKey = '7';break;/* [&] */
+        case 0x02a: retKey = '8';break;/* [*] */
+        case 0x028: retKey = '9';;break;/* [(] */
+        case 0x029: retKey = '0';break;/* [)] */
+        case 0x05f: retKey = '-';break;/* [_] */
+        case 0x02b: retKey = '=';break;/* [+] */
+        case 0x07c: retKey = '\'';break;/* [|] */
+        case 0x07d: retKey = '[';break;/* [}] */
+        case 0x07b: retKey = ']';break;/* [{] */
+        case 0x022: retKey = '\'';break;/* ["] */
+        case 0x03a: retKey = ';';break;/* [:] */
+        case 0x03f: retKey = '/';break;/* [?] */
+        case 0x03e: retKey = '.';break;/* [>] */
+        case 0x03c: retKey = ',';break;/* [<] */
+        case 0x7e: retKey = '`'; break;/* [~] */
 #endif
         // Its likely a string?
         default:
@@ -772,6 +791,19 @@ static void RW_IN_MLookUp (void)
     in_state->IN_CenterView_fp ();
 }
 
+/*
+client/cl_main.c @CL_Frame
+linux/vid_so.c
+    @VID_CheckChanges
+    @VID_LoadRefresh
+        @Real_IN_Init
+ref_gl/gl_rmain.c 
+    @R_Init
+    @R_SetMode
+linux/gl_glfw.c
+    @GLimp_SetMode
+
+*/
 void RW_IN_Init(in_state_t *in_state_p)
 {
     int mtype;
@@ -793,6 +825,7 @@ void RW_IN_Init(in_state_t *in_state_p)
     m_forward = ri.Cvar_Get ("m_forward", "1", 0);
     m_side = ri.Cvar_Get ("m_side", "0.8", 0);
 
+    Com_Printf("RW_IN_INIT: Adding Commands ??\n");
     ri.Cmd_AddCommand ("+mlook", RW_IN_MLookDown);
     ri.Cmd_AddCommand ("-mlook", RW_IN_MLookUp);
 

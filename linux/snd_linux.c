@@ -20,8 +20,21 @@ cvar_t *sndspeed;
 cvar_t *sndchannels;
 cvar_t *snddevice;
 
-static int tryrates[] = { 11025, 22051, 44100, 8000 };
+#include <stdint.h>
 
+uint8_t to_big_endian(uint8_t value) {
+    uint8_t result = 0;
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        result |= ((value >> i) & 1) << (7 - i);
+    }
+
+    return result;
+}
+
+static int tryrates[] = { 11025, 22051, 44100, 8000 };
+struct audio_buf_info info;
 qboolean SNDDMA_Init(void)
 {
 
@@ -30,7 +43,7 @@ qboolean SNDDMA_Init(void)
 	int tmp;
     int i;
     char *s;
-	struct audio_buf_info info;
+	
 	int caps;
 	extern uid_t saved_euid;
 
@@ -78,12 +91,14 @@ qboolean SNDDMA_Init(void)
 		return 0;
 	}
 
+/*
 	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP))
 	{
 		Com_Printf("Sorry but your soundcard can't do this\n");
 		close(audio_fd);
 		return 0;
 	}
+*/
 
     if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1)
     {   
@@ -92,6 +107,43 @@ qboolean SNDDMA_Init(void)
 		close(audio_fd);
 		return 0;
     }
+
+    Com_Printf("bytes: %i\n",info.bytes);
+    Com_Printf("fragments: %i\n",info.fragments);
+    Com_Printf("fragstotal: %i\n",info.fragstotal);
+    Com_Printf("fragsize: %i\n\n",info.fragsize);
+
+
+/*
+	if fragment size is lowered, application respond quicker
+*/
+    
+    // http://manuals.opensound.com/developer/SNDCTL_DSP_SETFRAGMENT.html
+
+    // lower this the better
+    int frag_size = 8;
+    int max_fragments = info.bytes/frag_size;
+
+    frag_size = (int)round(log2f(info.bytes/max_fragments));
+ 	int fragments = (max_fragments << 16) | (frag_size);
+
+    if (ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &fragments) < 0) {
+        perror("Error setting sound parameters");
+        return -1;
+    }
+
+    if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1)
+    {   
+        perror("GETOSPACE");
+		Com_Printf("Um, can't do GETOSPACE?\n");
+		close(audio_fd);
+		return 0;
+    }
+
+    Com_Printf("bytes: %i\n",info.bytes);
+    Com_Printf("fragments: %i\n",info.fragments);
+    Com_Printf("fragstotal: %i\n",info.fragstotal);
+    Com_Printf("fragsize: %i\n",info.fragsize);
     
 // set sample bits & speed
 
@@ -114,14 +166,15 @@ qboolean SNDDMA_Init(void)
 	if (dma.channels < 1 || dma.channels > 2)
 		dma.channels = 2;
 	
-	dma.samples = info.fragstotal * info.fragsize / (dma.samplebits/8);
+	dma.samples = info.bytes / (dma.samplebits/8);
 	dma.submission_chunk = 1;
 
 // memory map the dma buffer
 
+	// dma.samples * dma.samplebits/8
+	// MAP_FILE
 	if (!dma.buffer)
-		dma.buffer = (unsigned char *) mmap(NULL, info.fragstotal
-			* info.fragsize, PROT_WRITE, MAP_FILE|MAP_SHARED, audio_fd, 0);
+		dma.buffer = (unsigned char *) mmap(NULL, info.bytes, PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
 	if (!dma.buffer)
 	{
 		perror(snddevice->string);
@@ -146,6 +199,7 @@ qboolean SNDDMA_Init(void)
 	else
 		dma.channels = 1;
 
+	Com_Printf("speed before : %i\n",dma.speed);
     rc = ioctl(audio_fd, SNDCTL_DSP_SPEED, &dma.speed);
     if (rc < 0)
     {
@@ -154,6 +208,8 @@ qboolean SNDDMA_Init(void)
 		close(audio_fd);
         return 0;
     }
+
+    Com_Printf("speed after : %i\n",dma.speed);
 
     if (dma.samplebits == 16)
     {
@@ -189,24 +245,24 @@ qboolean SNDDMA_Init(void)
 
 // toggle the trigger & start her up
 
-    tmp = 0;
-    rc  = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
-	if (rc < 0)
-	{
-		perror(snddevice->string);
-		Com_Printf("Could not toggle.\n");
-		close(audio_fd);
-		return 0;
-	}
-    tmp = PCM_ENABLE_OUTPUT;
-    rc = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
-	if (rc < 0)
-	{
-		perror(snddevice->string);
-		Com_Printf("Could not toggle.\n");
-		close(audio_fd);
-		return 0;
-	}
+    // tmp = 0;
+    // rc  = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
+	// if (rc < 0)
+	// {
+	// 	perror(snddevice->string);
+	// 	Com_Printf("Could not toggle.\n");
+	// 	close(audio_fd);
+	// 	return 0;
+	// }
+    // tmp = PCM_ENABLE_OUTPUT;
+    // rc = ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp);
+	// if (rc < 0)
+	// {
+	// 	perror(snddevice->string);
+	// 	Com_Printf("Could not toggle.\n");
+	// 	close(audio_fd);
+	// 	return 0;
+	// }
 
 	dma.samplepos = 0;
 
@@ -240,14 +296,21 @@ int SNDDMA_GetDMAPos(void)
 
 void SNDDMA_Shutdown(void)
 {
-#if 0
 	if (snd_inited)
 	{
-		close(audio_fd);
+		// close(audio_fd);
 		snd_inited = 0;
 	}
-#endif
 }
+
+
+
+/*
+Why can't we write more directly, when dma.buffer is written to.
+like in client/snd_mix.c?
+	void S_TransferStereo16 (unsigned long *pbuf, int endtime)
+*/
+extern int soundtime;
 
 /*
 ==============
@@ -258,9 +321,99 @@ Send sound to device if buffer isn't really the dma buffer
 */
 void SNDDMA_Submit(void)
 {
+	// Com_Printf("SNDDMA_Submit\n");
+	// check if audio_fd is open
+	/*int flags = fcntl(audio_fd, F_GETFL);
+	if (flags == -1) {
+	   perror("fcntl");
+	   return 1;
+	}
+	if (flags & O_RDONLY) {
+	   Com_Printf("File descriptor is open for reading\n");
+	} else if (flags & O_WRONLY) {
+	   Com_Printf("File descriptor is open for writing\n");
+	} else if (flags & O_RDWR) {
+	   Com_Printf("File descriptor is open for reading and writing\n");
+	} else {
+	   Com_Printf("File descriptor is not open\n");
+	}*/
+
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1)
+    {   
+        perror("GETOSPACE");
+		Com_Printf("Um, can't do GETOSPACE?\n");
+		close(audio_fd);
+		Sys_Error(ERR_FATAL,"Fail SNDCTL_DSP_GETOSPACE\n");
+    }
+
+    // Don't write if no fragments
+    if ( !(info.fragments > 0) ) return;
+
+	int write_count = 0;
+	int totalToWrite = info.bytes;
+	int num_written = 0;
+	// int chunksize = info.fragsize;
+	int chunksize = info.bytes;
+	while (num_written < totalToWrite) {
+	    int remaining_bytes = totalToWrite - num_written;
+	    int result = write(audio_fd, dma.buffer + num_written, chunksize);
+	    write_count +=1;
+	    if (result == -1) {
+	        perror("write");
+	        exit(EXIT_FAILURE);
+	    } else {
+	    	
+	        num_written += result;
+	    }
+	}
+	// Com_Printf("Write Count = %i\n",write_count);
+
+/*
+	int dbfd = open("dmabuffer.txt", O_WRONLY | O_CREAT, 0666);
+	if (dbfd == -1) {
+	    perror("open");
+	    exit(1);
+	}
+
+	ssize_t written = 0;
+	ssize_t remaining = info.bytes;
+	while (remaining > 0) {
+	    written = write(dbfd, dma.buffer, remaining);
+	    if (written == -1) {
+	        perror("write");
+	        close(dbfd);
+	        exit(1);
+	    }
+	    remaining -= written;
+	}
+
+	if (close(dbfd) == -1) {
+	    perror("close");
+	    exit(1);
+	}
+*/
 }
 
 void SNDDMA_BeginPainting (void)
 {
+	/*
+	fd_set write_fds;
+    struct timeval timeout;
+
+	FD_ZERO(&write_fds);
+	FD_SET(audio_fd, &write_fds);
+
+	while (1) {
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        int num_ready = select(audio_fd+1, NULL, &write_fds, NULL, &timeout);
+        if (num_ready == -1) {
+            perror("select");
+            exit(EXIT_FAILURE);
+        } else if (num_ready == 0) {
+            continue;
+        }
+    }
+    */
 }
 

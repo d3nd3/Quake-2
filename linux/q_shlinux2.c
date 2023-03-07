@@ -36,10 +36,6 @@
 
 // #include "../../../common/header/common.h"
 
-#ifndef __linux__
-#define __linux__
-#endif
-
 typedef unsigned char byte;
 
 byte *membase;

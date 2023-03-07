@@ -126,8 +126,8 @@ void S_Init (void)
 	{
 		s_volume = Cvar_Get ("s_volume", "0.7", CVAR_ARCHIVE);
 		s_khz = Cvar_Get ("s_khz", "11", CVAR_ARCHIVE);
-		s_loadas8bit = Cvar_Get ("s_loadas8bit", "1", CVAR_ARCHIVE);
-		s_mixahead = Cvar_Get ("s_mixahead", "0.2", CVAR_ARCHIVE);
+		s_loadas8bit = Cvar_Get ("s_loadas8bit", "0", CVAR_ARCHIVE);
+		s_mixahead = Cvar_Get ("s_mixahead", "0.12", CVAR_ARCHIVE);
 		s_show = Cvar_Get ("s_show", "0", 0);
 		s_testsound = Cvar_Get ("s_testsound", "0", 0);
 		s_primary = Cvar_Get ("s_primary", "0", CVAR_ARCHIVE);	// win32 specific
@@ -166,17 +166,17 @@ void S_Shutdown(void)
 	int		i;
 	sfx_t	*sfx;
 
+	Cmd_RemoveCommand("play");
+	Cmd_RemoveCommand("stopsound");
+	Cmd_RemoveCommand("soundlist");
+	Cmd_RemoveCommand("soundinfo");
+
 	if (!sound_started)
 		return;
 
 	SNDDMA_Shutdown();
 
 	sound_started = 0;
-
-	Cmd_RemoveCommand("play");
-	Cmd_RemoveCommand("stopsound");
-	Cmd_RemoveCommand("soundlist");
-	Cmd_RemoveCommand("soundinfo");
 
 	// free all sounds
 	for (i=0, sfx=known_sfx ; i < num_sfx ; i++,sfx++)
@@ -759,6 +759,7 @@ S_ClearBuffer
 */
 void S_ClearBuffer (void)
 {
+	
 	int		clear;
 		
 	if (!sound_started)

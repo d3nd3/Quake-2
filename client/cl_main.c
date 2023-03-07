@@ -1837,6 +1837,7 @@ void CL_Shutdown(void)
 
 	CDAudio_Shutdown ();
 	S_Shutdown();
+
 	IN_Shutdown ();
 	VID_Shutdown();
 }

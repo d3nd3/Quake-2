@@ -784,8 +784,10 @@ void Key_Event (int key, qboolean down, unsigned time)
 	}
 
 	// any key during the attract mode will bring up the menu
-	if (cl.attractloop && cls.key_dest != key_menu)
+	if (cl.attractloop && cls.key_dest != key_menu) {
+		Com_Printf("Opening menu!\n");
 		key = K_ESCAPE;
+	}
 
 	// menu key is hardcoded, so the user can never unbind it
 	if (key == K_ESCAPE)
@@ -887,6 +889,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 	if (shift_down)
 		key = keyshift[key];
 
+	// Com_Printf("PRocessing key : key_dest == %i\n",cls.key_dest);
 	switch (cls.key_dest)
 	{
 	case key_message:

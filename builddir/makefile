@@ -6,21 +6,23 @@
 
 # -Wall
 CFLAGS = \
+	-D __linux__ \
 	-c \
 	-g \
 	-fPIC \
 	-w \
-	-Dstricmp=strcasecmp \
-	-O \
-	-ffast-math -funroll-loops \
-	-fomit-frame-pointer -fexpensive-optimizations -falign-loops=2 \
-	-falign-jumps=2 -falign-functions=2
+	-Dstricmp=strcasecmp
+# 	-O
+# 	-ffast-math -funroll-loops \
+# 	-fomit-frame-pointer -fexpensive-optimizations -falign-loops=2 \
+# 	-falign-jumps=2 -falign-functions=2
 LDFLAGS = \
 -lGL \
 -lglfw  \
 -lm \
 -ldl \
--lXext -lX11
+-lXext -lX11 \
+-lasound
 ODIR = next
 
 EXEBASE = quake2
@@ -90,7 +92,8 @@ EXE_LINUX_FILES = \
 ../linux/snd_linux.o \
 ../linux/sys_linux.o \
 ../linux/glob.o \
-../linux/net_udp.o
+../linux/net_udp.o \
+../linux/in_linux.o
 
 
 
@@ -484,11 +487,13 @@ $(ODIR)/r_surf.o : ../ref_soft/r_surf.c
 	cc $(CFLAGS) -o $@ $?
 #----------------------------------------------------------------------
 
-.PHONY: clean run debug
+.PHONY: clean run debug rundev
 clean:
 	rm -f next/*
 run:
-	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so
+	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set vid_ref "gl"
+rundev:
+	cd .. && ./quake2.exe +set vid_fullscreen 0 +set console 1 +set vid_ref "gl" +set developer 7
 
 debug:
 	cd .. && gdb -ex 'set follow-fork-mode child' --args ./quake2.exe +set vid_fullscreen 0 +set console 1 +set gl_driver libGL.so
