@@ -1097,7 +1097,11 @@ a deathmatch.
 void PutClientInServer (edict_t *ent)
 {
 	vec3_t	mins = {-16, -16, -24};
+	#ifdef SOF
+	vec3_t	maxs = {16, 16, 40};
+	#else
 	vec3_t	maxs = {16, 16, 32};
+	#endif
 	int		index;
 	vec3_t	spawn_origin, spawn_angles;
 	gclient_t	*client;
@@ -1614,10 +1618,17 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 		for (i=0 ; i<3 ; i++)
 		{
+			//short = float * 8
+			#if 0
+			pm.s.origin[i] = round(ent->s.origin[i]*8);
+			pm.s.velocity[i] = round(ent->velocity[i]*8);
+			#else
 			pm.s.origin[i] = ent->s.origin[i]*8;
 			pm.s.velocity[i] = ent->velocity[i]*8;
+			#endif
 		}
 
+		//pmove changed by game.dll
 		if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
 		{
 			pm.snapinitial = true;
@@ -1638,6 +1649,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 		for (i=0 ; i<3 ; i++)
 		{
+			//float = short / 8
 			ent->s.origin[i] = pm.s.origin[i]*0.125;
 			ent->velocity[i] = pm.s.velocity[i]*0.125;
 		}

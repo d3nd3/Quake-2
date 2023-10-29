@@ -20,8 +20,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qcommon.h"
 
-
-
+#define SOF
+//#define STRAIGHT
 #define	STEPSIZE	18
 
 // all of the locals will be zeroed before each
@@ -171,7 +171,7 @@ void PM_StepSlideMove_ (void)
 		VectorCopy (trace.plane.normal, planes[numplanes]);
 		numplanes++;
 
-#if 0
+#ifdef SOF
 	float		rub;
 
 		//
@@ -274,7 +274,7 @@ void PM_StepSlideMove (void)
 	vec3_t		down_o, down_v;
 	trace_t		trace;
 	float		down_dist, up_dist;
-//	vec3_t		delta;
+	vec3_t		delta;
 	vec3_t		up, down;
 
 	VectorCopy (pml.origin, start_o);
@@ -307,7 +307,7 @@ void PM_StepSlideMove (void)
 		VectorCopy (trace.endpos, pml.origin);
 	}
 
-#if 0
+#ifdef SOF
 	VectorSubtract (pml.origin, up, delta);
 	up_dist = DotProduct (delta, start_v);
 
@@ -323,6 +323,7 @@ void PM_StepSlideMove (void)
         + (up[1] - start_o[1])*(up[1] - start_o[1]);
 #endif
 
+#ifndef SOF
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
 		VectorCopy (down_o, pml.origin);
@@ -332,6 +333,15 @@ void PM_StepSlideMove (void)
 	//!! Special case
 	// if we were walking along a plane, then we need to copy the Z over
 	pml.velocity[2] = down_v[2];
+
+#else
+	if (trace.plane.normal[2] < MIN_STEP_NORMAL)
+	{
+		VectorCopy (down_o, pml.origin);
+		VectorCopy (down_v, pml.velocity);
+		return;
+	}
+#endif
 }
 
 
@@ -585,7 +595,7 @@ void PM_AirMove (void)
 	smove = pm->cmd.sidemove;
 	
 //!!!!! pitch should be 1/3 so this isn't needed??!
-#if 0
+#ifdef SOF
 	pml.forward[2] = 0;
 	pml.right[2] = 0;
 	VectorNormalize (pml.forward);
@@ -637,14 +647,16 @@ void PM_AirMove (void)
 		pml.velocity[2] = 0; //!!! this is before the accel
 		PM_Accelerate (wishdir, wishspeed, pm_accelerate);
 
-// PGM	-- fix for negative trigger_gravity fields
-//		pml.velocity[2] = 0;
+		// PGM	-- fix for negative trigger_gravity fields
+		#ifdef SOF
+		pml.velocity[2] = 0;
+		#else
 		if(pm->s.gravity > 0)
 			pml.velocity[2] = 0;
 		else
 			pml.velocity[2] -= pm->s.gravity * pml.frametime;
-// PGM
-
+		#endif
+		// PGM
 		if (!pml.velocity[0] && !pml.velocity[1])
 			return;
 		PM_StepSlideMove ();
@@ -657,7 +669,7 @@ void PM_AirMove (void)
 			PM_Accelerate (wishdir, wishspeed, 1);
 		// add gravity
 		pml.velocity[2] -= pm->s.gravity * pml.frametime;
-		PM_StepSlideMove ();
+		PM_StepSlideMove (); //sof1 slidefix here. velocity clamped to a mininum.
 	}
 }
 
@@ -668,8 +680,13 @@ void PM_AirMove (void)
 PM_CatagorizePosition
 =============
 */
+
+
 void PM_CatagorizePosition (void)
 {
+	// static bool grounded = false;
+	// static bool old_grounded = false;
+
 	vec3_t		point;
 	int			cont;
 	trace_t		trace;
@@ -683,10 +700,17 @@ void PM_CatagorizePosition (void)
 	point[0] = pml.origin[0];
 	point[1] = pml.origin[1];
 	point[2] = pml.origin[2] - 0.25;
-	if (pml.velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
+	#ifdef SOF
+	if (pml.velocity[2] > 100) //!!ZOID changed from 100 to 180 (ramp accel)
+	#else
+	if (pml.velocity[2] > 180)
+	#endif
 	{
 		pm->s.pm_flags &= ~PMF_ON_GROUND;
 		pm->groundentity = NULL;
+		//Com_Printf("Ramp Boost!\n");
+
+		//does this happen too frequently?
 	}
 	else
 	{
@@ -695,15 +719,37 @@ void PM_CatagorizePosition (void)
 		pml.groundsurface = trace.surface;
 		pml.groundcontents = trace.contents;
 
+		//Com_Printf("Steepness: %f\n",trace.plane.normal[2]);
+		//1== floor , 0==wall
+		//nothing below us
+		//something below us, but its steep plane and we not stuck so its fine.
+
+		//try not to become grounded on steep(0->0.7) surfaces
 		if (!trace.ent || (trace.plane.normal[2] < 0.7 && !trace.startsolid) )
-		{
+		{//air below or steep plane below and currently in air
+			if (trace.ent && (trace.plane.normal[2] < 0.7 && !trace.startsolid)) {
+				//Not allowed to be grounded on steep objects.
+				//Com_Printf("Special case: Grounded + Steep UNSTUCK\n");	
+			}
 			pm->groundentity = NULL;
 			pm->s.pm_flags &= ~PMF_ON_GROUND;
 		}
-		else
-		{
+		else//startsolid is rare ( assume stuck )
+		//something below us AND...
+		//FLAT OR...
+		//STEEP AND STUCK
+		{//world below us or entity below us + !(plane is steep and in air) "flat or in solid"
 			pm->groundentity = trace.ent;
-
+			if ( trace.plane.normal[2] >= 0.7 ) {
+				//Com_Printf("Grounded Flat\n");
+			}
+			else {
+				//If you stuck inside of a steep plane, you can be grounded on it.
+				//Else - you are expected to slide off of it (by being ungrounded)
+				Com_Printf("Grounded Steep %f %i\n",trace.plane.normal[2],trace.startsolid);
+			}
+			if ( trace.startsolid )
+				//Com_Printf("---------------------------STUCK---------------------\n");
 			// hitting solid ground will end a waterjump
 			if (pm->s.pm_flags & PMF_TIME_WATERJUMP)
 			{
@@ -727,7 +773,9 @@ void PM_CatagorizePosition (void)
 			}
 		}
 
-#if 0
+//keep off. Use the fix in PM_StepSlideMove_() instead.
+//dirty fix for not get hard-stuck on a slope, but creates persistent slide as byproduct
+#ifdef SOF
 		if (trace.fraction < 1.0 && trace.ent && pml.velocity[2] < 0)
 			pml.velocity[2] = 0;
 #endif
@@ -1085,21 +1133,86 @@ void PM_SnapPosition (void)
 	short	base[3];
 	// try all single bits first
 	static int jitterbits[8] = {0,4,1,2,3,5,6,7};
+	/*
+	0 = 0
+	4 = 001
+	1 = 1
+	2 = 01
+	3 = 11
+	5 = 101
+	6 = 011
+	7 = 111
+
+	1st bit == [0] axis aka X
+	2nd bit == [1] axis aka Y
+	3rd bit == [2] axis aka Z
+
+	thus:
+		0
+		z
+		x
+		y
+		x,y
+		x,z
+		y,z
+		x,y,z
+
+		this function attempts to move away from 0
+		perhaps an attempt to counter balance rounding error?
+	*/
 
 	// snap velocity to eigths
-	for (i=0 ; i<3 ; i++)
+	for (i=0 ; i<3 ; i++) {
+
+		
+		//short = float
+		#if 0
+		pm->s.velocity[i] = round(pml.velocity[i]*8);
+		#else
 		pm->s.velocity[i] = (int)(pml.velocity[i]*8);
+		#endif
+	}
 
 	for (i=0 ; i<3 ; i++)
 	{
+		#ifdef STRAIGHT
+		float f = pml.origin[i]*8;
+		if ( f - round(f) >= 0 )
+			sign[i] = 1;
+		else
+			sign[i] = -1;
+		#else
 		if (pml.origin[i] >= 0)
 			sign[i] = 1;
 		else 
 			sign[i] = -1;
+		#endif
+		//short = float
+		//multiplication by 8 to find the grid num
+		//ah - 
+		#ifdef STRAIGHT
+		pm->s.origin[i] = round(f);
+		#else
 		pm->s.origin[i] = (int)(pml.origin[i]*8);
+		#endif
+
+		//no snap
+		//short / 8 == float
+		//float * 8 == short == 8/16/24/32
+		//gridsize == 1 in short domain
+		//gridsize == 0.125 in float domain
+		//pml == float representing 8 grids.
+		//pm = units, where each grid is 1
+
+		//actually : truncation detection!
+		//float was already on that grid pos.
 		if (pm->s.origin[i]*0.125 == pml.origin[i])
 			sign[i] = 0;
+		//interesting because that means the below jitter only applies in case truncation moved something.
 	}
+
+	//tests truncated snapped gridline
+
 	VectorCopy (pm->s.origin, base);
 
 	// try all combinations
@@ -1120,7 +1233,7 @@ void PM_SnapPosition (void)
 //	Com_DPrintf ("using previous_origin\n");
 }
 
-#if 0
+#ifdef SOF
 //NO LONGER USED
 /*
 ================
@@ -1135,6 +1248,34 @@ void PM_InitialSnapPosition (void)
 
 	VectorCopy (pm->s.origin, base);
 
+	/*
+	z+,
+	 y+,
+	  x+,x0,x-
+	 y0,
+	  x+,x0,x-
+	 y-
+	  x+,x0,x- 
+	z0, 
+	  y+,
+	  x+,x0,x-
+	 y0,
+	  x+,x0,x-
+	 y-
+	  x+,x0,x-
+	z-
+	  y+,
+	  x+,x0,x-
+	 y0,
+	  x+,x0,x-
+	 y-
+	  x+,x0,x-
+
+	  bias for z+
+	  bias for positive
+	    2nd bias for neutral
+
+	*/
 	for (z=1 ; z>=-1 ; z--)
 	{
 		pm->s.origin[2] = base[2] + z;
@@ -1146,9 +1287,16 @@ void PM_InitialSnapPosition (void)
 				pm->s.origin[0] = base[0] + x;
 				if (PM_GoodPosition ())
 				{
+					//float = short / 8
+					#if 0
+					pml.origin[0] = round(pm->s.origin[0]*0.125);
+					pml.origin[1] = round(pm->s.origin[1]*0.125);
+					pml.origin[2] = round(pm->s.origin[2]*0.125);
+					#else
 					pml.origin[0] = pm->s.origin[0]*0.125;
 					pml.origin[1] = pm->s.origin[1]*0.125;
 					pml.origin[2] = pm->s.origin[2]*0.125;
+					#endif
 					VectorCopy (pm->s.origin, pml.previous_origin);
 					return;
 				}
@@ -1167,12 +1315,39 @@ PM_InitialSnapPosition
 */
 void PM_InitialSnapPosition(void)
 {
+	Com_Printf("InitialSnapPosition\n");
 	int        x, y, z;
 	short      base[3];
 	static int offset[3] = { 0, -1, 1 };
 
 	VectorCopy (pm->s.origin, base);
 
+	/*
+		z0
+		  y0
+		    x0,x-,x+
+		  y-
+		    x0,x-,x+
+		  y+
+		    x0,x-,x+
+		z-
+		  y0
+		    x0,x-,x+
+		  y-
+		    x0,x-,x+
+		  y+
+		    x0,x-,x+
+		z+
+		  y0
+		    x0,x-,x+
+		  y-
+		    x0,x-,x+
+		  y+
+		    x0,x-,x+
+
+		 bias for neutral
+		   2nd bias for negative
+	*/
 	for ( z = 0; z < 3; z++ ) {
 		pm->s.origin[2] = base[2] + offset[ z ];
 		for ( y = 0; y < 3; y++ ) {
@@ -1180,6 +1355,7 @@ void PM_InitialSnapPosition(void)
 			for ( x = 0; x < 3; x++ ) {
 				pm->s.origin[0] = base[0] + offset[ x ];
 				if (PM_GoodPosition ()) {
+					//float = short / 8
 					pml.origin[0] = pm->s.origin[0]*0.125;
 					pml.origin[1] = pm->s.origin[1]*0.125;
 					pml.origin[2] = pm->s.origin[2]*0.125;
@@ -1252,6 +1428,7 @@ void Pmove (pmove_t *pmove)
 	// clear all pmove local vars
 	memset (&pml, 0, sizeof(pml));
 
+	//float = short/8
 	// convert origin and velocity to float values
 	pml.origin[0] = pm->s.origin[0]*0.125;
 	pml.origin[1] = pm->s.origin[1]*0.125;

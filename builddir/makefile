@@ -4,8 +4,10 @@
 # # Disable built-in suffix rules
 # .SUFFIXES:
 
+
 # -Wall
 CFLAGS = \
+ 	$(CUSTOM_DEFINE) \
 	-D __linux__ \
 	-c \
 	-g \
